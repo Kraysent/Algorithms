@@ -34,7 +34,9 @@ def k_nearest(
     """
     x, y = current
     dsts1 = [metric(currx, curry, x, y) for currx, curry in points1]
+    dsts1.sort()
     dsts2 = [metric(currx, curry, x, y) for currx, curry in points2]
+    dsts2.sort()
 
     i1, i2 = 0, 0
     imp1 = 0
@@ -82,7 +84,7 @@ for x, y in blues:
 
 def onclick(event):
     x, y = event.xdata, event.ydata
-    r_imp, b_imp = k_nearest(reds, blues, (x, y), K, manhattan_distance)
+    r_imp, b_imp = k_nearest(reds, blues, (x, y), K, euclidean_metric)
 
     print(f"red importance: {r_imp} | blue importance: {b_imp}")
     if r_imp > b_imp:
