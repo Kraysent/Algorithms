@@ -5,11 +5,21 @@ from typing import Callable
 import matplotlib.pyplot as plt
 
 
-def physical_distance(x1, y1, x2, y2) -> float:
+def euclidean_metric(x1, y1, x2, y2) -> float:
     """
     Returns metric computed as physical distance between points.
     """
     return math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2)
+
+
+def cosine_distance(x1, y1, x2, y2) -> float:
+    return 1 - (x1 * x2 + y1 * y2) / (
+        math.sqrt(x1**2 + y1**2) * math.sqrt(x2**2 + y2**2)
+    )
+
+
+def manhattan_distance(x1, y1, x2, y2) -> float:
+    return abs(x1 - x2) + abs(y1 - y2)
 
 
 def k_nearest(
@@ -41,7 +51,9 @@ def k_nearest(
     return imp1, imp2
 
 
-def generate_points(N: int, left: float, right: float, bottom: float, top: float) -> list[tuple[float, float]]:
+def generate_points(
+    N: int, left: float, right: float, bottom: float, top: float
+) -> list[tuple[float, float]]:
     res = []
 
     for _ in range(N):
@@ -50,6 +62,7 @@ def generate_points(N: int, left: float, right: float, bottom: float, top: float
         res.append((x, y))
 
     return res
+
 
 reds = generate_points(5, 0, 1, 0, 0.5)
 blues = generate_points(5, 0, 1, 0.5, 1)
@@ -69,7 +82,7 @@ for x, y in blues:
 
 def onclick(event):
     x, y = event.xdata, event.ydata
-    r_imp, b_imp = k_nearest(reds, blues, (x, y), K, physical_distance)
+    r_imp, b_imp = k_nearest(reds, blues, (x, y), K, manhattan_distance)
 
     print(f"red importance: {r_imp} | blue importance: {b_imp}")
     if r_imp > b_imp:
