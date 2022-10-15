@@ -1,8 +1,9 @@
 import math
+from pprint import pprint
 from random import random
 from typing import Callable
-
 import matplotlib.pyplot as plt
+import numpy as np
 
 
 def euclidean_metric(x1, y1, x2, y2) -> float:
@@ -23,34 +24,34 @@ def manhattan_distance(x1, y1, x2, y2) -> float:
 
 
 def k_nearest(
-    points1: list[tuple[float, float]],
-    points2: list[tuple[float, float]],
+    groups: list[list[tuple[float, float]]],
     current: tuple[float, float],
     K: int,
     metric: Callable[[float, float, float, float], float],
-) -> tuple[float, float]:
+) -> list[float]:
     """
-    Returns "importance" of the `current` point relative to points in two lists accourding to "K nearest algorithm"
+    Returns "importances" of the `current` point relative to points in each group from `groups`
+    according to K nearest neighbours algorithm.
     """
     x, y = current
-    dsts1 = [metric(currx, curry, x, y) for currx, curry in points1]
-    dsts1.sort()
-    dsts2 = [metric(currx, curry, x, y) for currx, curry in points2]
-    dsts2.sort()
+    dst_groups = [
+        sorted([metric(currx, curry, x, y) for currx, curry in group])
+        for group in groups
+    ]
 
-    i1, i2 = 0, 0
-    imp1 = 0
-    imp2 = 0
+    indices = [0] * len(groups)
+    importances = [0] * len(groups)
 
-    while (i1 + i2 < K) and (i1 < len(dsts1)) and (i2 < len(dsts2)):
-        if dsts1[i1] < dsts2[i2]:
-            i1 += 1
-            imp1 += 1
-        else:
-            i2 += 1
-            imp2 += 1
+    while sum(indices) < K and all(
+        index < len(dst_groups[i]) for i, index in enumerate(indices)
+    ):
+        curr_distances = [dst_groups[i][index] for i, index in enumerate(indices)]
 
-    return imp1, imp2
+        nearest_group_number = np.argmin(curr_distances)
+        indices[nearest_group_number] += 1
+        importances[nearest_group_number] += 1
+
+    return importances
 
 
 def generate_points(
@@ -66,33 +67,43 @@ def generate_points(
     return res
 
 
-reds = generate_points(5, 0, 1, 0, 0.5)
-blues = generate_points(5, 0, 1, 0.5, 1)
-
-K = 5
+GROUPS_NUMBER = 4
+N = 30
+K = 50
+TRAINT_ON_TEST = False
+LEFT, RIGHT = 0, 1
+BOTTOM, TOP = 0, 10
+COLORS = "bgrcmykw"
 
 fig = plt.figure()
+plt.xlim(LEFT, RIGHT)
+plt.ylim(TOP, BOTTOM)
 plt.ion()
 plt.show()
 
-for x, y in reds:
-    plt.scatter(x, y, marker="o", color="r")
+groups = []
 
-for x, y in blues:
-    plt.scatter(x, y, marker="o", color="b")
+for i in range(GROUPS_NUMBER):
+    curr_group = generate_points(
+        N,
+        LEFT,
+        RIGHT,
+        BOTTOM + i / GROUPS_NUMBER * (TOP - BOTTOM),
+        BOTTOM + (i + 1) / GROUPS_NUMBER * (TOP - BOTTOM),
+    )
+
+    for x, y in curr_group:
+        plt.scatter(x, y, marker="o", color=COLORS[i % len(COLORS)])
+
+    groups.append(curr_group)
 
 
 def onclick(event):
     x, y = event.xdata, event.ydata
-    r_imp, b_imp = k_nearest(reds, blues, (x, y), K, euclidean_metric)
+    importances = k_nearest(groups, (x, y), K, euclidean_metric)
 
-    print(f"red importance: {r_imp} | blue importance: {b_imp}")
-    if r_imp > b_imp:
-        reds.append((x, y))
-        clr = "r"
-    else:
-        blues.append((x, y))
-        clr = "b"
+    print(f"Importances: {importances}")
+    clr = COLORS[np.argmax(importances) % len(COLORS)]
 
     plt.scatter(x, y, marker="o", color=clr)
     fig.canvas.draw()
