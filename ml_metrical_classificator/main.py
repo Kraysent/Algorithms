@@ -1,75 +1,50 @@
-import math
-from pprint import pprint
-from random import random
+from scipy import stats
+import random
 from typing import Callable
 import matplotlib.pyplot as plt
 import numpy as np
 
 
-def euclidean_metric(x1, y1, x2, y2) -> float:
-    """
-    Returns metric computed as physical distance between points.
-    """
-    return math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2)
+def minkovsky_distance(
+    p: int, axis: int = 1
+) -> Callable[[np.ndarray, np.ndarray], np.ndarray]:
+    def distance_func(start: np.ndarray, end: np.ndarray) -> np.ndarray:
+        return (np.abs((start - end)) ** p).sum(axis=axis) ** (1 / p)
+
+    return distance_func
 
 
-def cosine_distance(x1, y1, x2, y2) -> float:
-    return 1 - (x1 * x2 + y1 * y2) / (
-        math.sqrt(x1**2 + y1**2) * math.sqrt(x2**2 + y2**2)
-    )
-
-
-def manhattan_distance(x1, y1, x2, y2) -> float:
-    return abs(x1 - x2) + abs(y1 - y2)
+def cosine_distance(start: np.ndarray, end: np.ndarray) -> np.ndarray:
+    return 1 - np.dot(start, end) / (np.linalg.norm(start) * np.linalg.norm(end))
 
 
 def k_nearest(
-    groups: list[list[tuple[float, float]]],
-    current: tuple[float, float],
+    points: np.ndarray,
+    markers: np.ndarray,
+    current: np.ndarray,
     K: int,
-    metric: Callable[[float, float, float, float], float],
-) -> list[float]:
-    """
-    Returns "importances" of the `current` point relative to points in each group from `groups`
-    according to K nearest neighbours algorithm.
-    """
-    x, y = current
-    dst_groups = [
-        sorted([metric(currx, curry, x, y) for currx, curry in group])
-        for group in groups
-    ]
-
-    indices = [0] * len(groups)
-    importances = [0] * len(groups)
-
-    while sum(indices) < K and all(
-        index < len(dst_groups[i]) for i, index in enumerate(indices)
-    ):
-        curr_distances = [dst_groups[i][index] for i, index in enumerate(indices)]
-
-        nearest_group_number = np.argmin(curr_distances)
-        indices[nearest_group_number] += 1
-        importances[nearest_group_number] += 1
-
-    return importances
+    metric: Callable[[np.ndarray, np.ndarray], np.ndarray],
+) -> int:
+    distances = metric(points, current)
+    permutation = distances.argsort()[:K]
+    sorted_markers = markers[permutation]
+    modes, _ = stats.mode(sorted_markers, keepdims=False)
+    return modes
 
 
-def generate_points(
-    N: int, left: float, right: float, bottom: float, top: float
-) -> list[tuple[float, float]]:
-    res = []
+def generate_point(
+    groups_number: int, left: float, right: float, bottom: float, top: float
+) -> tuple[float, float, int]:
+    x = left + random.random() * (right - left)
+    group = random.randrange(0, groups_number)
+    y = bottom + (group + random.random()) / groups_number * (top - bottom)
 
-    for _ in range(N):
-        x = left + random() * (right - left)
-        y = bottom + random() * (top - bottom)
-        res.append((x, y))
-
-    return res
+    return x, y, group
 
 
 GROUPS_NUMBER = 4
-N = 30
-K = 50
+N = 150
+K = 5
 TRAINT_ON_TEST = False
 LEFT, RIGHT = 0, 1
 BOTTOM, TOP = 0, 10
@@ -81,30 +56,21 @@ plt.ylim(TOP, BOTTOM)
 plt.ion()
 plt.show()
 
-groups = []
+points = np.ndarray(shape=(N, 2))
+markers = np.ndarray(shape=(N))
 
-for i in range(GROUPS_NUMBER):
-    curr_group = generate_points(
-        N,
-        LEFT,
-        RIGHT,
-        BOTTOM + i / GROUPS_NUMBER * (TOP - BOTTOM),
-        BOTTOM + (i + 1) / GROUPS_NUMBER * (TOP - BOTTOM),
-    )
+for i in range(N):
+    x, y, marker = generate_point(GROUPS_NUMBER, LEFT, RIGHT, BOTTOM, TOP)
+    points[i, :] = np.array([x, y])
+    markers[i] = marker
 
-    for x, y in curr_group:
-        plt.scatter(x, y, marker="o", color=COLORS[i % len(COLORS)])
-
-    groups.append(curr_group)
+    plt.scatter(x, y, marker="o", color=COLORS[marker % len(COLORS)])
 
 
 def onclick(event):
     x, y = event.xdata, event.ydata
-    importances = k_nearest(groups, (x, y), K, euclidean_metric)
-
-    print(f"Importances: {importances}")
-    clr = COLORS[np.argmax(importances) % len(COLORS)]
-
+    marker = k_nearest(points, markers, np.array([x, y]), K, minkovsky_distance(2))
+    clr = COLORS[int(marker) % len(COLORS)]
     plt.scatter(x, y, marker="o", color=clr)
     fig.canvas.draw()
 
