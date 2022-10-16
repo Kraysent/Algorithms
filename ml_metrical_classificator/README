@@ -2,4 +2,4 @@ Simplest machine learning model - metrical classificator.
 
 Works for arbitrary number of groups. User is prompted to put a point into the plot. This point will be colored accourding to group it is in. 
 
-Algorithm used is K nearest neighbours, metric is euclidean (cosine and manhattan are availible as well).
+Algorithm used is K nearest neighbours, metric is minkovsky's.
