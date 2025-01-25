@@ -1,6 +1,6 @@
 import unittest
 
-from dijkstra.main import Connection, Node, get_shortest_path
+from graphs.dijkstra.main import Connection, Node, get_shortest_path
 
 
 class ProgramTests(unittest.TestCase):
