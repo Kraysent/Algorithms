@@ -20,7 +20,8 @@ class ProgramTests(unittest.TestCase):
             Connection(D, E, 3),
         ]
 
-        self.assertEqual(get_shortest_path(graph, A, E), 6)
+        dst, _ = get_shortest_path(graph, A, E)
+        self.assertEqual(dst, 6)
 
     def test_two_nodes(self):
         A = Node("A")
@@ -30,7 +31,8 @@ class ProgramTests(unittest.TestCase):
             Connection(A, B, 1),
         ]
 
-        self.assertEqual(get_shortest_path(graph, A, B), 1)
+        dst, _ = get_shortest_path(graph, A, B)
+        self.assertEqual(dst, 1)
 
     def test_graph_with_equal_distances(self):
         A = Node("A")
@@ -48,7 +50,8 @@ class ProgramTests(unittest.TestCase):
             Connection(D, E, 30),
         ]
 
-        self.assertEqual(get_shortest_path(graph, A, E), 32)
+        dst, _ = get_shortest_path(graph, A, E)
+        self.assertEqual(dst, 32)
 
     def test_disconnected_graph(self):
         A = Node("A")
@@ -64,4 +67,5 @@ class ProgramTests(unittest.TestCase):
             Connection(D, E, 3),
         ]
 
-        self.assertEqual(get_shortest_path(graph, A, E), -1)
+        dst, _ = get_shortest_path(graph, A, E)
+        self.assertEqual(dst, -1)

@@ -10,14 +10,22 @@ class Connection:
     node2: Node
     length: float
 
+    def __str__(self) -> str:
+        return f"({self.node1} -> {self.node2})"
 
-def get_shortest_path(graph: list[Connection], start: Node, end: Node) -> float:
+
+def get_shortest_path(
+    graph: list[Connection],
+    start: Node,
+    end: Node,
+) -> tuple[float, list[Connection]]:
     # take latest node from priority queue, for each neighbour, add it to priority queue with priority equal to priority of the node + length of the connection
     # pop node from priority queue
 
     @dataclass
     class NodeData:
         distance: float
+        path: list[Connection]
 
     connections: dict[Node, list[Connection]] = {}
 
@@ -34,31 +42,31 @@ def get_shortest_path(graph: list[Connection], start: Node, end: Node) -> float:
     info: dict[Node, NodeData] = {}
 
     heapq.heappush(queue, (0, start))
-    info[start] = NodeData(0)
+    info[start] = NodeData(0, [])
 
     while True:
         if len(queue) == 0:
-            return -1
+            return -1, []
 
         _, node = heapq.heappop(queue)
-        print(node)
         node_info = info[node]
 
         if node == end:
-            return node_info.distance
+            return node_info.distance, node_info.path
 
         for conn in connections[node]:
             other = conn.node1 if conn.node2 == node else conn.node2
             other_distance = node_info.distance + conn.length
+            other_path = node_info.path + [conn]
 
             if other not in info:
-                info[other] = NodeData(other_distance)
+                info[other] = NodeData(other_distance, other_path)
             elif other_distance >= info[other].distance:
                 continue
 
             heapq.heappush(queue, (other_distance, other))
             info[other].distance = other_distance
-            print(f"Added {node} -> {other} ({other_distance})")
+            info[other].path = other_path
 
 
 if __name__ == "__main__":
@@ -70,11 +78,13 @@ if __name__ == "__main__":
 
     graph = [
         Connection(A, B, 1),
-        Connection(A, C, 1),
-        Connection(B, D, 1),
-        Connection(C, D, 1),
-        Connection(C, E, 40),
-        Connection(D, E, 30),
+        Connection(A, C, 2),
+        Connection(B, D, 3),
+        Connection(C, D, 4),
+        Connection(C, E, 4),
+        Connection(D, E, 3),
     ]
 
-    print(get_shortest_path(graph, A, E))
+    distance, path = get_shortest_path(graph, A, E)
+    print(f"Distance: {distance}")
+    print("Path: {}".format(" ".join([str(conn) + " " for conn in path])))
